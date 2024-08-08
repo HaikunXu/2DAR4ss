@@ -1,0 +1,27 @@
+---
+title: "2DAR selectivity for Stock Synthesis"
+author: "Haikun Xu"
+date: "`r Sys.Date()`"
+output: pdf_document
+bibliography: references.bib
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This document demonstrates how to use the stand-alone TMB code mentioned in @xu2019 to estimate the two correlation coefficients for selectivity devs (rho_a and Rho_t) outside Stock Synthesis. The SS files for this example code can be found [here](https://github.com/HaikunXu/2DAR4ss/tree/main/SS%20files).
+
+## Tuning SigmaS
+The tuning algorithm is based on Equation 19 in @xu2019. Estimated selectivity devs and their standard errors can be found in the report file. They are saved as a csv file in this example but they can also be directly extracted in R using r4ss.
+
+```{r}
+Selex_devs <- read.csv("D:/OneDrive - IATTC/Git/2DAR4ss/SS files/Selex_devs.csv", header = TRUE)
+head(Selex_devs)
+SigmaS_new <- sqrt(sd(Selex_devs$Value)^2 + sum(Selex_devs$Parm_StDev^2)/nrow(Selex_devs)) # Equation 19
+b <- 1 - sum(Selex_devs$Parm_StDev^2)/nrow(Selex_devs)/SigmaS_new^2 # Equation 20
+```
