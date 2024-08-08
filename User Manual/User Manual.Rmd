@@ -14,14 +14,66 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-This document demonstrates how to use the stand-alone TMB code mentioned in @xu2019 to estimate the two correlation coefficients for selectivity devs (rho_a and Rho_t) outside Stock Synthesis. The SS files for this example code can be found [here](https://github.com/HaikunXu/2DAR4ss/tree/main/SS%20files).
+This document demonstrates how to use the stand-alone TMB code mentioned in @xu2019 to estimate the two correlation coefficients for selectivity devs (rho_a and rho_t) outside Stock Synthesis. The SS files for this example code can be found [[here]{.underline}](https://github.com/HaikunXu/2DAR4ss/tree/main/SS%20files).
 
 ## Tuning SigmaS
-The tuning algorithm is based on Equation 19 in @xu2019. Estimated selectivity devs and their standard errors can be found in the report file. They are saved as a csv file in this example but they can also be directly extracted in R using r4ss.
+
+The tuning algorithm is based on Equation 19 in @xu2019. Estimated selectivity devs and their standard errors can be found in the report file. They are saved as a [[csv file]{.underline}](https://github.com/HaikunXu/2DAR4ss/blob/main/SS%20files/Selex_devs.csv) in this example but they can also be directly extracted in R using r4ss. SigmaS_new should be used in new the control file as the new SigmaS until it is close to the value specified in the current control file.
 
 ```{r}
 Selex_devs <- read.csv("D:/OneDrive - IATTC/Git/2DAR4ss/SS files/Selex_devs.csv", header = TRUE)
 head(Selex_devs)
-SigmaS_new <- sqrt(sd(Selex_devs$Value)^2 + sum(Selex_devs$Parm_StDev^2)/nrow(Selex_devs)) # Equation 19
-b <- 1 - sum(Selex_devs$Parm_StDev^2)/nrow(Selex_devs)/SigmaS_new^2 # Equation 20
+
+SigmaS_new <- 
+  sqrt(sd(Selex_devs$Value) ^ 2 + sum(Selex_devs$Parm_StDev ^ 2) / nrow(Selex_devs)) # Equation 19
+b <- 
+  1 - sum(Selex_devs$Parm_StDev ^ 2) / nrow(Selex_devs) / SigmaS_new ^ 2 # Equation 20
+```
+
+## Estimating autocorrelation coefficients
+
+The two autocorrelation coefficients can be estimated after the tuning is finished. A stand-alone [[TMB code]{.underline}](https://github.com/HaikunXu/2DAR4ss/blob/main/User%20Manual/2DAR_Selex.cpp) is developed to estimate rho_a and rho_t. You need to install the R package *TMB* to compile the code on your machine.
+
+```{r}
+library(TMB)
+setwd("D:/OneDrive - IATTC/Git/2DAR4ss/User Manual/")
+
+compile("2DAR_Selex.cpp")
+dyn.load("2DAR_Selex.dll")
+
+# format Selex_devs as a matrix
+Nages = 6 # 6 age bins
+Nyears = 64 # 64 time steps
+
+Selex_devs_matrix <- matrix(Selex_devs$Value, nrow = Nages)
+
+Obj <-
+  MakeADFun(
+    data = list(
+      "Nyears" = Nyears,
+      "Nages" = Nages,
+      "SDev_hat" = Selex_devs_matrix
+    ),
+    parameters = list(
+      "rho_a" = -log(1 / 0.5 - 1),
+      "rho_t" = -log(1 / 0.5 - 1),
+      "ln_SigmaS" = log(0.96) # SigmaR is fixed at 0.96 based on the tuning above
+    ),
+    map = list(ln_SigmaS = factor(NA)), # SigmaR is not estimated here
+    random = NULL
+  )
+
+Upr = rep(Inf, length(Obj$par))
+Lwr = rep(-Inf, length(Obj$par))
+
+Opt = nlminb(
+  start = Obj$par,
+  objective = Obj$fn,
+  gradient = Obj$gr,
+  upper = Upr,
+  lower = Lwr
+)
+
+# rho_a and rho_t are estimated to be:
+exp(Opt$par) / (exp(Opt$par) + 1)
 ```
