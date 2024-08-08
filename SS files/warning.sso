@@ -1,0 +1,8 @@
+SS-V3.30.04.02-safe;_2017_05_31;_Stock_Synthesis_by_Richard_Methot_(NOAA)_using_ADMB_11.6
+Thu Aug  8 09:57:19 2024
+
+ Are you sure you want so few early recrdevs? 5
+You have selected the experimental 2D_AR selectivity smoother option
+ N warnings: 2
+Reminder: Number of lamdas !=0.0 and !=1.0:  1
+Number_of_active_parameters_on_or_near_bounds: 1
