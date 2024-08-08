@@ -24,6 +24,16 @@ The tuning algorithm is based on Equation 19 in @xu2019. Estimated selectivity d
 Selex_devs <- read.csv("D:/OneDrive - IATTC/Git/2DAR4ss/SS files/Selex_devs.csv", header = TRUE)
 head(Selex_devs)
 
+# first check the 2D surface of selectivity devs - they appear to be highly correlated in age and time
+library(ggplot2)
+Selex_devs$Age <- 2:7
+Selex_devs$Time <- rep(1948:2011, each = 6)
+ggplot(data = Selex_devs) +
+  geom_tile(aes(x = Time, y = Age, fill = Value)) +
+  scale_fill_distiller(palette = "RdBu", limits = c(-1,1)*max(abs(Selex_devs$Value))) +
+  ggtitle("Selectivity devs") +
+  theme_bw()
+
 SigmaS_new <- 
   sqrt(sd(Selex_devs$Value) ^ 2 + sum(Selex_devs$Parm_StDev ^ 2) / nrow(Selex_devs)) # Equation 19
 b <- 
